@@ -81,6 +81,39 @@
       background: transparent;
     }
 
+    /* ---- 질문 입력 ---- */
+    .question-box {
+      max-width: 520px;
+      margin: 0 auto 1.6rem;
+    }
+    .question-box label {
+      display: block;
+      font-size: 0.82rem;
+      letter-spacing: 0.25em;
+      color: rgba(212, 175, 55, 0.85);
+      margin-bottom: 0.6rem;
+    }
+    .question-box input {
+      width: 100%;
+      font-family: "Noto Serif KR", serif;
+      font-size: 1rem;
+      color: #e8dfc8;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(212, 175, 55, 0.4);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+      outline: none;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .question-box input::placeholder {
+      color: rgba(232, 223, 200, 0.35);
+    }
+    .question-box input:focus {
+      border-color: rgba(212, 175, 55, 0.85);
+      box-shadow: 0 0 16px rgba(212, 175, 55, 0.25);
+    }
+
     /* ---- 덱 + 버튼 ---- */
     .deck-area {
       position: relative;
@@ -378,6 +411,11 @@
     <div class="subtitle">오늘의 카드를 뽑아보세요</div>
     <div class="divider"></div>
 
+    <div class="question-box">
+      <label for="questionInput">QUESTION</label>
+      <input type="text" id="questionInput" placeholder="카드에게 물어볼 질문을 입력하세요" maxlength="200" />
+    </div>
+
     <div class="deck-area">
       <div class="deck" id="deck">
         <div class="deck-card"></div>
@@ -520,12 +558,19 @@
 
     function requestReading() {
       if (!lastDraw) return;
+      const questionPart = lastDraw.question
+        ? `[질문]
+${lastDraw.question}
+
+`
+        : "";
       const prompt = `타로 리딩을 부탁해. 아래 조건을 반드시 지켜줘.
 
-[조건]
-1. 중립적으로 리딩할 것. 긍정이나 부정 어느 쪽으로도 치우치지 말 것.
-2. 각 카드를 따로따로 나열해 해석하지 말고, 카드들을 유기적으로 연결해서 하나의 흐름으로 리딩할 것.
-3. 이전 대화, 지난 리딩 결과와 맥락, 저장된 메모리, 나에 대해 알고 있는 정보(인간관계 포함)는 전부 배제하고, 아래 카드 구성만을 근거로 리딩할 것.
+${questionPart}[조건]
+1. ${lastDraw.question ? "위 질문에 대한 답을 중심으로 리딩할 것." : "특정 질문 없이 뽑은 카드이니 전반적인 흐름을 리딩할 것."}
+2. 중립적으로 리딩할 것. 긍정이나 부정 어느 쪽으로도 치우치지 말 것.
+3. 각 카드를 따로따로 나열해 해석하지 말고, 카드들을 유기적으로 연결해서 하나의 흐름으로 리딩할 것.
+4. 이전 대화, 지난 리딩 결과와 맥락, 저장된 메모리, 나에 대해 알고 있는 정보(인간관계 포함)는 전부 배제하고, 아래 카드 구성만을 근거로 리딩할 것.
 
 [유니버셜 웨이트 6장]
 ${lastDraw.uw.join("\n")}
@@ -573,7 +618,12 @@ ${lastDraw.lenormand.join("\n")}`;
         tag: "No. " + (lenormand.indexOf(name) + 1)
       }));
 
-      lastDraw = { uw: uwDraw, belline: bellineDraw, lenormand: lenormandDraw };
+      lastDraw = {
+        uw: uwDraw,
+        belline: bellineDraw,
+        lenormand: lenormandDraw,
+        question: document.getElementById("questionInput").value.trim()
+      };
 
       const shuffleWait = 1200;
       let t = dealInto("cards-uw", "spread-uw", uwData, shuffleWait);
