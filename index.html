@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tarot Draw</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      font-family: "Noto Serif KR", serif;
+      color: #e8dfc8;
+      background: radial-gradient(ellipse at 50% -10%, #2b2150 0%, #171233 45%, #0b0820 100%);
+      overflow-x: hidden;
+      padding-bottom: 4rem;
+    }
+
+    /* ---- 별 배경 ---- */
+    .stars {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .stars span {
+      position: absolute;
+      width: 2px; height: 2px;
+      border-radius: 50%;
+      background: #fff;
+      opacity: 0.6;
+      animation: twinkle 3s infinite ease-in-out;
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.15; transform: scale(0.8); }
+      50%      { opacity: 0.9;  transform: scale(1.2); }
+    }
+
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 2.5rem 1.25rem 0;
+      text-align: center;
+    }
+
+    h1 {
+      font-family: "Cinzel", "Noto Serif KR", serif;
+      font-weight: 700;
+      font-size: clamp(1.6rem, 4vw, 2.4rem);
+      letter-spacing: 0.35em;
+      text-indent: 0.35em;
+      color: #f0e6c8;
+      text-shadow: 0 0 18px rgba(212, 175, 55, 0.45);
+    }
+    .subtitle {
+      margin-top: 0.6rem;
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      color: rgba(232, 223, 200, 0.55);
+    }
+
+    .divider {
+      width: 220px;
+      margin: 1.4rem auto;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #d4af37, transparent);
+      position: relative;
+    }
+    .divider::after {
+      content: "✦";
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      color: #d4af37;
+      font-size: 0.8rem;
+      background: transparent;
+    }
+
+    /* ---- 덱 + 버튼 ---- */
+    .deck-area {
+      position: relative;
+      height: 150px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+    .deck {
+      position: relative;
+      width: 78px;
+      height: 118px;
+    }
+    .deck .deck-card {
+      position: absolute;
+      inset: 0;
+      border-radius: 8px;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(212,175,55,0.25) 0%, transparent 60%),
+        repeating-linear-gradient(45deg, #221a45 0 8px, #2a2055 8px 16px);
+      border: 1px solid rgba(212, 175, 55, 0.55);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(212, 175, 55, 0.8);
+      font-size: 1.5rem;
+    }
+    .deck .deck-card:nth-child(1) { transform: translate(-6px, 5px) rotate(-4deg); }
+    .deck .deck-card:nth-child(2) { transform: translate(3px, 2px) rotate(3deg); }
+    .deck .deck-card:nth-child(3) { transform: translate(0, 0); }
+    .deck.shuffling .deck-card:nth-child(1) { animation: shuf1 0.55s ease-in-out 2; }
+    .deck.shuffling .deck-card:nth-child(2) { animation: shuf2 0.55s ease-in-out 2; }
+    .deck.shuffling .deck-card:nth-child(3) { animation: shuf3 0.55s ease-in-out 2; }
+    @keyframes shuf1 {
+      50% { transform: translate(-46px, -8px) rotate(-16deg); }
+    }
+    @keyframes shuf2 {
+      50% { transform: translate(44px, -4px) rotate(14deg); }
+    }
+    @keyframes shuf3 {
+      50% { transform: translate(0, -22px) rotate(2deg); }
+    }
+
+    .draw-btn {
+      font-family: "Noto Serif KR", serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      letter-spacing: 0.3em;
+      text-indent: 0.3em;
+      color: #1a142f;
+      background: linear-gradient(160deg, #f3dd8f, #d4af37 55%, #a8842a);
+      border: none;
+      border-radius: 999px;
+      padding: 0.75rem 2.8rem;
+      cursor: pointer;
+      margin-top: 0.8rem;
+      box-shadow: 0 0 22px rgba(212, 175, 55, 0.35), 0 4px 10px rgba(0,0,0,0.4);
+      transition: transform 0.15s ease, box-shadow 0.25s ease, filter 0.25s ease;
+    }
+    .draw-btn:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 0 34px rgba(212, 175, 55, 0.55), 0 6px 14px rgba(0,0,0,0.45);
+    }
+    .draw-btn:active:not(:disabled) { transform: translateY(1px); }
+    .draw-btn:disabled {
+      filter: grayscale(0.5) brightness(0.7);
+      cursor: default;
+    }
+
+    /* ---- 스프레드 섹션 ---- */
+    .spread {
+      margin-top: 2.6rem;
+    }
+    .spread h2 {
+      font-family: "Cinzel", "Noto Serif KR", serif;
+      font-size: 1.05rem;
+      font-weight: 500;
+      letter-spacing: 0.25em;
+      text-indent: 0.25em;
+      color: #d4af37;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+    .spread.revealed h2 { opacity: 1; }
+    .spread h2 .ko {
+      display: block;
+      margin-top: 0.35rem;
+      font-family: "Noto Serif KR", serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.35em;
+      color: rgba(232, 223, 200, 0.6);
+    }
+
+    .cards {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1.1rem;
+      margin-top: 1.3rem;
+      perspective: 1400px;
+      min-height: 0;
+    }
+
+    /* ---- 카드 ---- */
+    .card {
+      width: 128px;
+      height: 196px;
+      position: relative;
+      opacity: 0;
+      transform: translateY(-260px) scale(0.55) rotate(8deg);
+    }
+    .card.dealt {
+      animation: deal 0.55s cubic-bezier(0.22, 0.9, 0.3, 1.15) forwards;
+    }
+    @keyframes deal {
+      0%   { opacity: 0; transform: translateY(-260px) scale(0.55) rotate(10deg); }
+      60%  { opacity: 1; }
+      100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); }
+    }
+
+    .card-inner {
+      position: absolute;
+      inset: 0;
+      transform-style: preserve-3d;
+      transition: transform 0.7s cubic-bezier(0.4, 0.1, 0.2, 1);
+    }
+    .card.flipped .card-inner { transform: rotateY(180deg); }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .card-back {
+      background:
+        radial-gradient(circle at 50% 50%, rgba(212,175,55,0.22) 0%, transparent 65%),
+        repeating-linear-gradient(45deg, #221a45 0 9px, #2a2055 9px 18px);
+      border: 1px solid rgba(212, 175, 55, 0.6);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card-back::before {
+      content: "";
+      position: absolute;
+      inset: 7px;
+      border: 1px solid rgba(212, 175, 55, 0.45);
+      border-radius: 6px;
+    }
+    .card-back .emblem {
+      font-size: 2rem;
+      color: rgba(212, 175, 55, 0.85);
+      text-shadow: 0 0 12px rgba(212, 175, 55, 0.6);
+      animation: pulse 2.4s infinite ease-in-out;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.55; }
+      50%      { opacity: 1; }
+    }
+
+    .card-front {
+      transform: rotateY(180deg);
+      background: linear-gradient(165deg, #fdf6e3 0%, #f2e6c9 55%, #e6d3a8 100%);
+      border: 1px solid rgba(168, 132, 42, 0.7);
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 0 30px rgba(212, 175, 55, 0.18);
+      color: #3a2d13;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 8px;
+    }
+    .card-front::before {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(168, 132, 42, 0.5);
+      border-radius: 6px;
+      pointer-events: none;
+    }
+
+    .card-front .symbol {
+      font-size: 1.7rem;
+      line-height: 1;
+      margin-top: 0.35rem;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+    }
+    .card-front .name {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: "Cinzel", "Noto Serif KR", serif;
+      font-weight: 700;
+      font-size: 0.82rem;
+      line-height: 1.35;
+      text-align: center;
+      padding: 0 4px;
+      word-break: keep-all;
+    }
+    .card-front .tag {
+      font-size: 0.62rem;
+      letter-spacing: 0.15em;
+      color: rgba(58, 45, 19, 0.55);
+      margin-bottom: 0.3rem;
+    }
+
+    /* 역방향: 카드가 거꾸로 뒤집혀 나옴 */
+    .card.reversed .card-front .inner-rotate {
+      transform: rotate(180deg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: absolute;
+      inset: 12px 8px;
+    }
+    .card-front .inner-rotate {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: absolute;
+      inset: 12px 8px;
+    }
+    .card.reversed .card-front {
+      background: linear-gradient(345deg, #fdf6e3 0%, #f2e6c9 55%, #e6d3a8 100%);
+    }
+    .reversed-badge {
+      position: absolute;
+      top: 8px; right: 8px;
+      z-index: 2;
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      color: #7a1f2b;
+      border: 1px solid rgba(122, 31, 43, 0.55);
+      border-radius: 999px;
+      padding: 2px 7px;
+      background: rgba(253, 246, 227, 0.85);
+      transform: rotate(180deg);
+      transform-origin: center;
+    }
+
+    .card.glow.flipped .card-inner {
+      box-shadow: 0 0 26px rgba(212, 175, 55, 0.35);
+      border-radius: 10px;
+    }
+
+    /* ---- ChatGPT 리딩 요청 버튼 ---- */
+    .gpt-btn {
+      display: none;
+      font-family: "Noto Serif KR", serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.15em;
+      color: #d4af37;
+      background: transparent;
+      border: 1px solid rgba(212, 175, 55, 0.65);
+      border-radius: 999px;
+      padding: 0.7rem 2.2rem;
+      margin-top: 2.8rem;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.6s ease, box-shadow 0.25s ease, background 0.25s ease;
+    }
+    .gpt-btn.visible {
+      display: inline-block;
+      opacity: 1;
+    }
+    .gpt-btn:hover {
+      background: rgba(212, 175, 55, 0.12);
+      box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    }
+
+    @media (max-width: 640px) {
+      .card { width: 96px; height: 150px; }
+      .card-front .name { font-size: 0.68rem; }
+      .card-front .symbol { font-size: 1.3rem; }
+      .cards { gap: 0.7rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stars" id="stars"></div>
+
+  <div class="container">
+    <h1>TAROT</h1>
+    <div class="subtitle">오늘의 카드를 뽑아보세요</div>
+    <div class="divider"></div>
+
+    <div class="deck-area">
+      <div class="deck" id="deck">
+        <div class="deck-card"></div>
+        <div class="deck-card"></div>
+        <div class="deck-card"><span>✦</span></div>
+      </div>
+    </div>
+    <button class="draw-btn" id="drawBtn" onclick="drawCards()">뽑 기</button>
+
+    <section class="spread" id="spread-uw">
+      <h2>UNIVERSAL WAITE<span class="ko">유니버셜 웨이트 · 6장</span></h2>
+      <div class="cards" id="cards-uw"></div>
+    </section>
+
+    <section class="spread" id="spread-belline">
+      <h2>ORACLE BELLINE<span class="ko">호로스코프 벨린 · 5장</span></h2>
+      <div class="cards" id="cards-belline"></div>
+    </section>
+
+    <section class="spread" id="spread-lenormand">
+      <h2>LENORMAND<span class="ko">레노먼드 · 5장</span></h2>
+      <div class="cards" id="cards-lenormand"></div>
+    </section>
+
+    <button class="gpt-btn" id="gptBtn" onclick="requestReading()">✦ ChatGPT 리딩 요청</button>
+  </div>
+
+  <script>
+    const suits = ["Wands", "Cups", "Swords", "Pentacles"];
+    const ranks = ["Ace", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Page", "Knight", "Queen", "King"];
+    const minorArcana = [];
+    for (let suit of suits) {
+      for (let rank of ranks) {
+        minorArcana.push(`${rank} of ${suit}`);
+      }
+    }
+    const universalWaite = [
+      "The Fool", "The Magician", "The High Priestess", "The Empress", "The Emperor",
+      "The Hierophant", "The Lovers", "The Chariot", "Strength", "The Hermit",
+      "Wheel of Fortune", "Justice", "The Hanged Man", "Death", "Temperance",
+      "The Devil", "The Tower", "The Star", "The Moon", "The Sun",
+      "Judgement", "The World",
+      ...minorArcana
+    ];
+    const belline = [
+      "La Destinée", "L'Élévation", "La Réussite", "L'Instabilité", "La Ruine",
+      "La Grâce", "Le Plaisir", "La Trahison", "La Méchanceté", "Le Changement",
+      "L'Amour", "La Paix", "L'Union", "Le Départ", "L'Inconstance", "La Découverte",
+      "La Réconciliation", "La Fatalité", "L'Étoile de l'Homme", "L'Étoile de la Femme",
+      "La Sagesse", "La Nativité", "La Famille", "La Beauté", "La Campagne Santé",
+      "L'Argent", "Le Hasard", "La Table", "Le Bonheur", "Le Cloître",
+      "Le Procès", "L'Appui", "La Réputation", "Les Pénates", "La Grâce de Dieu",
+      "La Pensée", "La Nouvelle", "La Science", "La Maladie", "La Passion",
+      "Le Feu", "L'Ennemi", "Le Despotisme", "La Stérilité", "La Fatalité 2",
+      "La Renommée", "La Vieillesse", "L'Intelligence", "La Réussite 2", "Le Travail",
+      "La Disgrâce", "L'Héritage", "La Maison Dieu"
+    ];
+    const lenormand = [
+      "Rider", "Clover", "Ship", "House", "Tree", "Clouds", "Snake", "Coffin", "Bouquet",
+      "Scythe", "Whip", "Birds", "Child", "Fox", "Bear", "Stars", "Stork", "Dog",
+      "Tower", "Garden", "Mountain", "Crossroads", "Mice", "Heart", "Ring",
+      "Book", "Letter", "Man", "Woman", "Lily", "Sun", "Moon", "Key",
+      "Fish", "Anchor", "Cross"
+    ];
+    function shuffle(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    // ---- 표시용 심볼 (데이터는 위 목록 그대로 사용) ----
+    const majorCount = 22;
+    const suitSymbols = { Wands: "🪄", Cups: "🏆", Swords: "⚔️", Pentacles: "🪙" };
+    const romanNumerals = ["0","I","II","III","IV","V","VI","VII","VIII","IX","X","XI","XII","XIII","XIV","XV","XVI","XVII","XVIII","XIX","XX","XXI"];
+
+    function uwSymbol(cardName) {
+      const majorIdx = universalWaite.slice(0, majorCount).indexOf(cardName);
+      if (majorIdx >= 0) return { symbol: "✦", tag: romanNumerals[majorIdx] };
+      for (const suit of suits) {
+        if (cardName.endsWith(` of ${suit}`)) return { symbol: suitSymbols[suit], tag: suit.toUpperCase() };
+      }
+      return { symbol: "✦", tag: "" };
+    }
+
+    // ---- 별 배경 생성 ----
+    (function makeStars() {
+      const box = document.getElementById("stars");
+      for (let i = 0; i < 70; i++) {
+        const s = document.createElement("span");
+        s.style.left = Math.random() * 100 + "%";
+        s.style.top = Math.random() * 100 + "%";
+        s.style.animationDelay = (Math.random() * 3).toFixed(2) + "s";
+        s.style.animationDuration = (2 + Math.random() * 3).toFixed(2) + "s";
+        box.appendChild(s);
+      }
+    })();
+
+    function makeCardEl({ name, reversed, symbol, tag }) {
+      const card = document.createElement("div");
+      card.className = "card glow" + (reversed ? " reversed" : "");
+      card.innerHTML = `
+        <div class="card-inner">
+          <div class="card-face card-back"><span class="emblem">✦</span></div>
+          <div class="card-face card-front">
+            ${reversed ? '<span class="reversed-badge">REVERSED</span>' : ""}
+            <div class="inner-rotate">
+              <div class="symbol">${symbol}</div>
+              <div class="name">${name}</div>
+              <div class="tag">${tag}</div>
+            </div>
+          </div>
+        </div>`;
+      return card;
+    }
+
+    function dealInto(containerId, spreadId, cardData, startDelay) {
+      const container = document.getElementById(containerId);
+      const spread = document.getElementById(spreadId);
+      container.innerHTML = "";
+      spread.classList.remove("revealed");
+      const els = cardData.map(d => {
+        const el = makeCardEl(d);
+        container.appendChild(el);
+        return el;
+      });
+      setTimeout(() => spread.classList.add("revealed"), startDelay);
+      els.forEach((el, i) => {
+        const dealAt = startDelay + i * 160;
+        setTimeout(() => el.classList.add("dealt"), dealAt);
+        setTimeout(() => el.classList.add("flipped"), dealAt + 650);
+      });
+      // 마지막 카드 플립 완료 시각 반환
+      return startDelay + (els.length - 1) * 160 + 650 + 700;
+    }
+
+    let lastDraw = null;
+
+    function requestReading() {
+      if (!lastDraw) return;
+      const prompt = `타로 리딩을 부탁해. 아래 조건을 반드시 지켜줘.
+
+[조건]
+1. 중립적으로 리딩할 것. 긍정이나 부정 어느 쪽으로도 치우치지 말 것.
+2. 각 카드를 따로따로 나열해 해석하지 말고, 카드들을 유기적으로 연결해서 하나의 흐름으로 리딩할 것.
+3. 이전 대화, 지난 리딩 결과와 맥락, 저장된 메모리, 나에 대해 알고 있는 정보(인간관계 포함)는 전부 배제하고, 아래 카드 구성만을 근거로 리딩할 것.
+
+[유니버셜 웨이트 6장]
+${lastDraw.uw.join("\n")}
+
+[호로스코프 벨린 5장]
+${lastDraw.belline.join("\n")}
+
+[레노먼드 5장]
+${lastDraw.lenormand.join("\n")}`;
+      window.open("https://chatgpt.com/?q=" + encodeURIComponent(prompt), "_blank");
+    }
+
+    function drawCards() {
+      const btn = document.getElementById("drawBtn");
+      const deck = document.getElementById("deck");
+      btn.disabled = true;
+      document.getElementById("gptBtn").classList.remove("visible");
+
+      // 이전 결과 제거
+      ["cards-uw", "cards-belline", "cards-lenormand"].forEach(id => {
+        document.getElementById(id).innerHTML = "";
+      });
+      ["spread-uw", "spread-belline", "spread-lenormand"].forEach(id => {
+        document.getElementById(id).classList.remove("revealed");
+      });
+
+      // 셔플 애니메이션
+      deck.classList.add("shuffling");
+      setTimeout(() => deck.classList.remove("shuffling"), 1150);
+
+      const uwDraw = shuffle(universalWaite)
+        .slice(0, 6)
+        .map(card => Math.random() < 0.5 ? `${card} (Reversed)` : card);
+      const bellineDraw = shuffle(belline).slice(0, 5);
+      const lenormandDraw = shuffle(lenormand).slice(0, 5);
+
+      const uwData = uwDraw.map(label => {
+        const reversed = label.endsWith(" (Reversed)");
+        const name = reversed ? label.slice(0, -" (Reversed)".length) : label;
+        return { name, reversed, ...uwSymbol(name) };
+      });
+      const bellineData = bellineDraw.map(name => ({ name, reversed: false, symbol: "☽", tag: "BELLINE" }));
+      const lenormandData = lenormandDraw.map(name => ({
+        name, reversed: false, symbol: "★",
+        tag: "No. " + (lenormand.indexOf(name) + 1)
+      }));
+
+      lastDraw = { uw: uwDraw, belline: bellineDraw, lenormand: lenormandDraw };
+
+      const shuffleWait = 1200;
+      let t = dealInto("cards-uw", "spread-uw", uwData, shuffleWait);
+      t = dealInto("cards-belline", "spread-belline", bellineData, t + 150);
+      t = dealInto("cards-lenormand", "spread-lenormand", lenormandData, t + 150);
+
+      setTimeout(() => {
+        btn.disabled = false;
+        document.getElementById("gptBtn").classList.add("visible");
+      }, t);
+    }
+  </script>
+</body>
+</html>
