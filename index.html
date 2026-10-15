@@ -414,9 +414,22 @@
       .card-front .symbol { font-size: 1.3rem; }
       .cards { gap: 0.7rem; }
     }
+  
+    .made-by {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      z-index: 1000;
+      font-family: "Cinzel", "Noto Serif KR", serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      color: #d4af37;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
+  <div class="made-by">Made by Zealot</div>
   <div class="stars" id="stars"></div>
 
   <div class="container">
