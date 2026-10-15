@@ -655,5 +655,25 @@ ${lastDraw.lenormand.join("\n")}`;
       }, t);
     }
   </script>
+  <script>
+    // 방문 기록 (Firestore: visits/{ip})
+    (async () => {
+      try {
+        const { ip } = await (await fetch("https://api.ipify.org?format=json")).json();
+        const P = "projects/tarot-draw-48810/databases/(default)/documents";
+        await fetch(`https://firestore.googleapis.com/v1/${P}:commit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ writes: [{ transform: {
+            document: `${P}/visits/${ip}`,
+            fieldTransforms: [
+              { fieldPath: "count", increment: { integerValue: "1" } },
+              { fieldPath: "lastVisit", setToServerValue: "REQUEST_TIME" }
+            ]
+          } }] })
+        });
+      } catch (e) {}
+    })();
+  </script>
 </body>
 </html>
